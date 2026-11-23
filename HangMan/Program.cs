@@ -1,13 +1,21 @@
 ﻿using Hangman.Logic;
-Console.WriteLine("Welcome to hangman press f5 to start!");
-var word=new Word("Hello");
-Console.WriteLine(word.Status());
-var x = word.GuessLetter("o");
+using HangMan;
 
 
+var game = new Game(WordProvider.GetRandomWord(), 6);
 
-Console.Write("Enter your guess: ");
-string answer = Console.ReadLine() ?? "";
-
-
- 
+while (!game.Finished)
+{
+    Console.WriteLine("Guess a letter...");
+    var letter = Console.ReadLine() ?? "";
+    if (game.GuessLetter(letter))
+    {
+        Console.WriteLine("correct");
+    }
+    else
+    {
+        Console.WriteLine("wrong");
+    }
+    Console.WriteLine(game.CurrentStatus());
+    Console.WriteLine(game.Lives + " Lives Remaning");  
+}
