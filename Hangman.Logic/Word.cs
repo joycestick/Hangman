@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace HangMan
+namespace Hangman.Logic
 {
-    internal class Word
+    public class Word
     {
         private readonly string _answer;
 

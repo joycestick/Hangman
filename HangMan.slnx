@@ -1,3 +1,5 @@
 <Solution>
+  <Project Path="Hangman.Logic.Tests/Hangman.Logic.Tests.csproj" />
+  <Project Path="Hangman.Logic/Hangman.Logic.csproj" />
   <Project Path="HangMan/HangMan.csproj" />
 </Solution>

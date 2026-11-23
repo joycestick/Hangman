@@ -1,4 +1,4 @@
-﻿using HangMan;
+﻿using Hangman.Logic;
 Console.WriteLine("Welcome to hangman press f5 to start!");
 var word=new Word("Hello");
 Console.WriteLine(word.Status());
