@@ -3,7 +3,7 @@
     [TestClass]
     public sealed class Test1
     {
-        [TestMethod]
+        [TestMethod(DisplayName ="Test GuessLetter")]
         public void TestMethod1()
         {
             var w = new Word("Welcome");

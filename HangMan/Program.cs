@@ -6,7 +6,7 @@ var game = new Game(wp.GetRandomWord(), 6);
 
 Console.WriteLine(game.CurrentStatus());
 
-while (!game.Finished)
+while (!game.OutOfLives && !game.Won)
 {
     Console.WriteLine("Guess a letter or press SPACE to quit");
     var input = Console.ReadLine();
@@ -25,4 +25,12 @@ while (!game.Finished)
     }
     Console.WriteLine(game.CurrentStatus());
     Console.WriteLine(game.Lives + " Lives Remaining");  
+}
+if (game.OutOfLives)
+{
+    Console.WriteLine("You lose! The word was " + game.Answer);
+}
+else
+{
+    Console.WriteLine("You win!");
 }

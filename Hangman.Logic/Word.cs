@@ -4,6 +4,9 @@
     {
         private readonly string _answer;
         private readonly char[] _status;
+
+        public string Answer => _answer;
+
         public Word(string answer)
         {
             _answer = answer.ToUpperInvariant();
