@@ -1,0 +1,102 @@
+name: Build Hangman for iPhone
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    runs-on: macos-26
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install .NET 11
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 11.0.x
+
+      - name: Install MAUI iOS workload
+        run: dotnet workload install maui-ios
+
+      - name: Check signing settings
+        shell: bash
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64}}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD}}
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64}}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY}}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID}}
+          IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID}}
+        run: |
+          missing=()
+          for name in APPLE_CERTIFICATE_P12_BASE64 APPLE_CERTIFICATE_PASSWORD APPLE_PROVISIONING_PROFILE_BASE64 APPLE_SIGNING_IDENTITY APPLE_TEAM_ID IOS_BUNDLE_ID; do
+            if [[ -z ${!name} ]]; then missing+=("$name"); fi
+          done
+          if (( ${#missing[@]} )); then
+            printf '::error::Configure these GitHub Actions secrets/variables before building: %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+      - name: Install Apple signing certificate and profile
+        shell: bash
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64}}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD}}
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64}}
+        run: |
+          set -euo pipefail
+          KEYCHAIN_PATH="$RUNNER_TEMP/hangman-build.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+          CERTIFICATE_PATH="$RUNNER_TEMP/apple-signing-certificate.p12"
+          PROFILE_PATH="$RUNNER_TEMP/apple-provisioning-profile.mobileprovision"
+          PROFILE_PLIST="$RUNNER_TEMP/apple-provisioning-profile.plist"
+          echo "$APPLE_CERTIFICATE_P12_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          echo "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -k "$KEYCHAIN_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          security cms -D -i "$PROFILE_PATH" > "$PROFILE_PLIST"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' "$PROFILE_PLIST")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print Name' "$PROFILE_PLIST")
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          echo "IOS_KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          echo "IOS_PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+
+      - name: Publish signed iPhone package
+        shell: bash
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY}}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID}}
+          IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID}}
+        run: >-
+          dotnet publish Hangman.Desktop/Hangman.Desktop.csproj
+          --configuration Release
+          --framework net11.0-ios
+          --runtime ios-arm64
+          --output "${{ runner.temp }}/hangman-ios-publish"
+          -p:ArchiveOnBuild=true
+          -p:BuildIpa=true
+          -p:ApplicationId="$IOS_BUNDLE_ID"
+          -p:CodesignKey="$APPLE_SIGNING_IDENTITY"
+          -p:CodesignProvision="$IOS_PROFILE_NAME"
+          -p:CodesignTeamId="$APPLE_TEAM_ID"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hangman-iOS-IPA
+          path: ${{ runner.temp }}/hangman-ios-publish/*.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Remove signing keychain
+        if: always() && env.IOS_KEYCHAIN_PATH != ''
+        shell: bash
+        run: security delete-keychain "$IOS_KEYCHAIN_PATH" || true
