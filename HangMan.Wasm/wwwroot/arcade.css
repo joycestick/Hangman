@@ -79,7 +79,15 @@ body {
 }
 .key:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
 .key-correct { background: #dff8e9; border-color: #8cdaad; border-bottom-color: #4fba7c; color: #187746; }
-.key-wrong { background: #ffe5e1; border-color: #f1ada4; border-bottom-color: #e4796e; color: #b94138; }
+.key-wrong {
+    background: #ffe5e1;
+    border-color: #f1ada4;
+    border-bottom-color: #e4796e;
+    color: #b94138;
+    text-decoration: line-through;
+    text-decoration-color: #b94138;
+    text-decoration-thickness: 4px;
+}
 .bottom-row { margin-top: 22px; }
 .hint-dot { background: #24bcb8; }
 .reset-button { color: #7157cd; font-weight: 500; }

@@ -29,6 +29,9 @@ jobs:
       - name: Publish static WebAssembly app
         run: dotnet publish HangMan.Wasm/HangMan.Wasm.csproj --configuration Release --output "${{ runner.temp }}/hangman-publish"
 
+      - name: Add marker so Pages serves underscore-prefixed runtime files
+        run: touch "${{ runner.temp }}/hangman-publish/wwwroot/.nojekyll"
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
