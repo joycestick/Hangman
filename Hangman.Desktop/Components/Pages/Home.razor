@@ -1,0 +1,111 @@
+@page "/"
+@using System.Text
+
+<PageTitle>Hangman — The Letter Lounge</PageTitle>
+
+<main class="page-shell">
+    <header class="topbar">
+        <a class="brand" href="/" aria-label="The Letter Lounge home"><span class="brand-mark">L</span><span>THE LETTER LOUNGE</span></a>
+        <span class="edition">A LITTLE WORD GAME <span class="sparkle">✳</span></span>
+    </header>
+
+    <section class="game-layout" aria-label="Hangman game">
+        <div class="game-copy">
+            <div class="eyebrow"><span class="eyebrow-line"></span> THE DAILY DISTRACTION</div>
+            <h1>A word is<br />waiting <em>for you.</em></h1>
+            <p class="intro">Find the hidden word, one letter at a time.<br />You have six chances. Make them count.</p>
+
+            <div class="word-area" aria-live="polite" aria-label="Hidden word">
+                @foreach (var (letter, index) in WordSlots.Select((letter, index) => (letter, index)))
+                {
+                    <span class="letter-slot @(letter != "_" ? "revealed" : "")" aria-label="@(letter == "_" ? "hidden letter" : letter)">@(letter == "_" ? " " : letter)</span>
+                }
+            </div>
+
+            <div class="message-line" aria-live="polite">
+                @if (_game.Won) { <span class="result win">Lovely work — you found it!</span> }
+                else if (_game.OutOfLives) { <span class="result lose">The word was @_game.Answer. Better luck next time.</span> }
+                else if (!string.IsNullOrEmpty(_message)) { <span class="@(_lastCorrect ? "feedback-good" : "feedback-bad")">@_message</span> }
+                else { <span>Pick a letter to begin</span> }
+            </div>
+
+            <div class="keyboard" aria-label="Choose a letter">
+                @foreach (var letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+                {
+                    var used = _guessed.Contains(letter);
+                    var correct = used && _answerLetters.Contains(letter);
+                    <button class="key @(used ? (correct ? "key-correct" : "key-wrong") : "")" disabled="@(used || IsFinished)" @onclick="() => Guess(letter)" aria-label="Guess @letter">@letter</button>
+                }
+            </div>
+
+            <div class="bottom-row">
+                <span class="keyboard-hint"><span class="hint-dot"></span> OR USE YOUR KEYBOARD</span>
+                <button class="reset-button" @onclick="NewGame"><span>↻</span> NEW WORD</button>
+            </div>
+        </div>
+
+        <aside class="illustration-card" aria-label="Hangman drawing: @_wrong guesses out of 6 mistakes">
+            <div class="card-top"><span>THE GALLOWS</span><span class="attempts">@_wrong <i>/</i> 6 MISSES</span></div>
+            <svg class="hangman" viewBox="0 0 420 390" role="img" aria-label="Hangman illustration, @_wrong wrong guesses">
+                <path class="scaffold" d="M62 344 H275 M112 344 V44 H270 V76 M112 95 H158" />
+                <g class="@(_game.OutOfLives ? "dead-body" : "")">
+                @if (_wrong >= 1) { <circle class="figure" cx="158" cy="111" r="31" /> }
+                @if (_wrong >= 2) { <path class="figure" d="M158 142 V238" /> }
+                @if (_wrong >= 3) { <path class="figure" d="M158 165 L119 204" /> }
+                @if (_wrong >= 4) { <path class="figure" d="M158 165 L197 204" /> }
+                @if (_wrong >= 5) { <path class="figure" d="M158 238 L124 291" /> }
+                @if (_wrong >= 6) { <path class="figure" d="M158 238 L192 291" /> }
+                @if (_wrong >= 1)
+                {
+                    @if (_game.OutOfLives)
+                    {
+                        <path class="face-detail dead-face" d="M144 102 L152 110 M152 102 L144 110 M164 102 L172 110 M172 102 L164 110 M149 126 Q158 116 167 126" />
+                    }
+                    else
+                    {
+                        <circle class="face-detail" cx="148" cy="106" r="2.5" /><circle class="face-detail" cx="168" cy="106" r="2.5" />
+                        <path class="face-detail" d="M149 124 Q158 116 167 124" />
+                    }
+                }
+                </g>
+                <path class="ground-detail" d="M48 354 Q155 345 286 354" />
+                <circle class="star star-one" cx="332" cy="111" r="3" /><circle class="star star-two" cx="85" cy="144" r="2" />
+                <path class="little-star" d="M319 165 l4 9 9 4-9 4-4 9-4-9-9-4 9-4z" />
+            </svg>
+            <div class="card-caption"><span class="caption-mark">✳</span><span>@Caption</span></div>
+        </aside>
+    </section>
+
+    <footer class="footer"><span>TAKE A BREATH. TAKE A GUESS.</span><span>MADE FOR THE LOVE OF WORDS <span class="footer-heart">♥</span></span></footer>
+</main>
+
+@code {
+    private static readonly string[] Words = ["WELCOME", "HANGMAN", "OLLIE", "LOSER", "IDEA", "WELL", "JOKE", "HOLD", "JOINING", "ROOK"];
+    private Game _game = new(Words[Random.Shared.Next(Words.Length)], 6);
+    private readonly HashSet<char> _guessed = [];
+    private string _message = "";
+    private bool _lastCorrect;
+    private int _wrong;
+    private string[] WordSlots => _game.CurrentStatus().Split(' ');
+    private HashSet<char> _answerLetters => _game.Answer.ToHashSet();
+    private bool IsFinished => _game.Won || _game.OutOfLives;
+    private string Caption => _game.Won ? "A perfect little victory." : _game.OutOfLives ? "This one got away." : _wrong switch { 0 => "Plenty of room for mistakes.", 1 => "A little slip. Keep going.", 2 => "Still in the running.", 3 => "Keep your head in the game.", 4 => "It's getting close now.", 5 => "One last chance…", _ => "" };
+
+    private void Guess(char letter)
+    {
+        if (IsFinished || !_guessed.Add(letter)) return;
+        var response = _game.GuessLetter(letter);
+        _lastCorrect = response == GuessResponse.Correct;
+        if (!_lastCorrect) _wrong++;
+        _message = _lastCorrect ? $"Yes! {letter} is in the word." : $"No {letter} this time.";
+    }
+
+    private void NewGame()
+    {
+        var next = Words[Random.Shared.Next(Words.Length)];
+        if (Words.Length > 1 && next == _game.Answer) next = Words[(Array.IndexOf(Words, next) + 1) % Words.Length];
+        _game = new Game(next, 6);
+        _guessed.Clear(); _wrong = 0; _message = ""; _lastCorrect = false;
+    }
+
+}

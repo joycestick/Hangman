@@ -21,6 +21,9 @@
 # .NET build artifacts
 artifacts/
 
+# Local CLI cache used by the sandboxed build environment
+.dotnet-home/
+
 # Publish output
 publish/
 

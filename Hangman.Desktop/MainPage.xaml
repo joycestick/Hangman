@@ -1,0 +1,11 @@
+﻿<ContentPage xmlns:local="clr-namespace:Hangman.Desktop"
+             xmlns:components="clr-namespace:Hangman.Desktop.Components"
+             x:Class="Hangman.Desktop.MainPage">
+
+    <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
+        <BlazorWebView.RootComponents>
+            <RootComponent Selector="#app" ComponentType="{x:Type components:Routes}" />
+        </BlazorWebView.RootComponents>
+    </BlazorWebView>
+
+</ContentPage>
