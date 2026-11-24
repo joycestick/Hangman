@@ -86,7 +86,7 @@ body {
     color: #b94138;
     text-decoration: line-through;
     text-decoration-color: #b94138;
-    text-decoration-thickness: 2px;
+    text-decoration-thickness: 4px;
 }
 .bottom-row { margin-top: 22px; }
 .hint-dot { background: #24bcb8; }
