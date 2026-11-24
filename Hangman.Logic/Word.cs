@@ -1,33 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Hangman.Logic
+﻿namespace Hangman.Logic
 {
     public class Word
     {
         private readonly string _answer;
-        private List<string> _correctlyGuessedLetters = new List<string>();
-
+        private readonly char[] _status;
         public Word(string answer)
         {
             _answer = answer.ToUpperInvariant();
+            _status = new char[_answer.Length];
+            for (int i = 0; i < _answer.Length; i++)
+            {
+                _status[i] = '_';
+            }
         }
 
        public string Status()
         {
-            var underscores = new string[_answer.Length];
-            for (int i = 0; i < underscores.Length; i++)
-            {
-                underscores[i] = "_";
-            }
-            return string.Join(" ", underscores);
+            return string.Join(" ", _status);
         }
-        public bool GuessLetter (string letter )
+
+        public bool GuessLetter(char letter)
         {
-            if (_answer.Contains(letter.ToUpperInvariant()))
+            if (_answer.Contains(letter, StringComparison.OrdinalIgnoreCase))
             {
-                _correctlyGuessedLetters.Add(letter);
+                for (int i = 0; i < _answer.Length; i++)
+                {
+                    if (letter == _answer[i])
+                    {
+                        _status[i] = _answer[i];
+                    }
+                }
                 return true;
             }
             return false;
