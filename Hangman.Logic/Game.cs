@@ -18,6 +18,7 @@ namespace Hangman.Logic
         public bool Finished => Lives == 0 || false;
 
         public int Lives { get => _lives; set => _lives = value; }
+        public bool Won { get; set; }
 
         public bool GuessLetter(string letter)
         {

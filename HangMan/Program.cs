@@ -1,8 +1,8 @@
 ﻿using Hangman.Logic;
 using HangMan;
 
-
-var game = new Game(WordProvider.GetRandomWord(), 6);
+var wp = new WordProvider();
+var game = new Game(wp.GetRandomWord(), 6);
 
 while (!game.Finished)
 {
